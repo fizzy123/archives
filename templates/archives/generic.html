@@ -1,0 +1,11 @@
+{% extends "base_template.html" %}
+
+{% load staticfiles %}
+
+{% block content %}
+<div class="article">
+    {% autoescape off %}
+        <div class="content">{{ node.content }}</div>
+    {% endautoescape %}   
+</div>
+{% endblock %}
