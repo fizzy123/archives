@@ -11,16 +11,20 @@ def tell(arguments, method):
     name = arguments['name']
     if method == 'GET':
         n = None
+        location = ''
         if arguments.has_key('location'):
-            name = arguments['location']+':'+name
+            location = arguments['location']
         while not n:
-            if Node.objects.filter(title=name).exists():
-                n = Node.objects.get(title=name)
-            elif ':' in name:
-                name_array = name.split(":")
-                name = ":".join(name_array[:-2]+[name_array[-1]])
+            if Node.objects.filter(title=location+':'+name).exists():
+                n = Node.objects.get(title=location+':'+name)
+            elif ':' in location:
+                location_array = location.split(":")
+                location= ":".join(location_array[:-1])
             else:    
-                n = Node.objects.get(title='idk')
+                if Node.objects.filter(title=name).exists():
+                    n = Node.objects.get(title=name)
+                else:    
+                    n = Node.objects.get(title='idk')
         while n.content[0:3] == '-->':
             if Node.objects.filter(title=n.content[3::]):
                 n = Node.objects.get(title=n.content[3::])

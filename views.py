@@ -14,6 +14,7 @@ def process(request, text):
     arguments = {}
     
     found = True
+    found_node = None
     if command == 'tell':
         if request.session.has_key('location'):
             arguments['location']=request.session['location']
