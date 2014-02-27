@@ -111,7 +111,9 @@ def edit_tags(arguments, method):
         return tell({'name':'idk'}, 'GET')
 
 def process_command(text):
-    text = urllib2.unquote(text.decode("utf8")).replace('your ','Nobel:')
+    text = urllib2.unquote(text.decode("utf8"))
+    text = text.replace('your ','Nobel:')
+    text = text.replace('\'s ',':')
     command = text.split(' ')[0]
     text_arguments = text.split(' ')[1::]
     removable_words = ['me', 'about']
