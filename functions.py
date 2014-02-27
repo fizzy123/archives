@@ -115,7 +115,7 @@ def process_command(text):
     text = text.replace('your ','Nobel:')
     text = text.replace('\'s ',':')
     command = text.split(' ')[0]
-    text_arguments = text.split(' ')[1::]
+    text_arguments = text.split(' ')[1:]
     removable_words = ['me', 'about']
     text_arguments = filter(lambda x: x not in removable_words, text_arguments)
     return command, text_arguments

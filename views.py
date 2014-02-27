@@ -64,8 +64,9 @@ def process(request, text):
             arguments['tags'] = request.POST['tags'].split(', ')
         response = edit_tags(arguments, method)
     elif command == 'help':
-        arguments['name']='help'
-        response = tell(arguments, 'GET')
+        arguments['name']='this website:help'
+        response, found_node = tell(arguments, 'GET')
+        found = True if found_node.title != "idk" else False
     else:
         arguments['name']='idu'
         response = tell(arguments, 'GET')
