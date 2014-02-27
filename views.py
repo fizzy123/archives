@@ -8,6 +8,9 @@ from archives.models import Node, Tag
 from archives.functions import tell, login_wrapper, logout_wrapper, edit, delete, edit_tags, process_command
 from general.functions import parse_content, json_response
 
+def index(request):
+    return render(request, 'archives/index.html')
+
 def process(request, text):
     command, text_arguments = process_command(text);
     method = request.META['REQUEST_METHOD']
