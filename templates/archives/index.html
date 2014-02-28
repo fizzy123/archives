@@ -1,0 +1,182 @@
+{% extends 'base_template.html' %}
+
+{% block javascript %}
+<script>
+
+var form = [];
+var form_pos = -1;
+var url
+
+function getCookie(name) {
+    var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+    return cookieValue;
+}
+var csrftoken = getCookie('csrftoken');
+
+function csrfSafeMethod(method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+}
+
+function sameOrigin(url) {
+    // test that a given url is a same-origin URL
+    // url could be relative or scheme relative or absolute
+    var host = document.location.host; // host + port
+    var protocol = document.location.protocol;
+    var sr_origin = '//' + host;
+    var origin = protocol + sr_origin;
+    // Allow absolute or scheme relative URLs to same origin
+    return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+        (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+        // or any other URL that isn't scheme relative or absolute i.e relative.
+        !(/^(\/\/|http:|https:).*/.test(url));
+}
+
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && sameOrigin(settings.url)) {
+            // Send the token to same-origin, relative URLs only.
+            // Send the token only if the method warrants CSRF protection
+            // Using the CSRFToken value acquired earlier
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
+
+function sendCommand(command){
+    url = "archives/process/" + encodeURIComponent(command) + "/";
+    $( "#dialogue" ).append("<div class='command'>"+command+"</div><br/>");
+    $(".command:last-of-type").show('slow');
+    $.getJSON(url, function( data ) {
+        $( "#dialogue" ).append("<div class='reply'>"+data.reply+"</div><br/>")
+        $(".reply:last-of-type").show('slow', function() {
+            $("html, body").animate({ scrollTop: $(document).height() }, 1000);
+        });
+        $(".reply:last-of-type").children().each(function(){
+            $(this).click(function() {
+                var topic = $(this).attr("class").split(" ");
+                topic.shift();
+                topic = topic.join(" ");
+                sendCommand("tell me about "+topic);
+            });
+        });
+            
+        if (data.form != null){
+            $.each(data.form, function(key,value){
+                form.push([key,value]);
+            });
+            $("#label").html(form[0][0]+":");
+            if (form[0][0] == "content"){
+                $("#command").remove();
+                $("#command_box").append("<textarea id='command' cols='80' rows='20'>")
+                $("#command").focus();
+                setListener();
+            }
+            if (form[0][0] == "password"){
+                $("#command").remove();
+                $("#command_box").append("<input id='command' type='password' name='command'>")
+                $("#command").focus();
+                setListener();
+            }
+            $("#command").val(form[0][1]);
+            form_pos = 0;    
+        }
+
+    });
+}
+
+function setListener(){
+$( "#command" ).keypress(function( event ) {
+    if ( event.which == 13 ) {
+        event.preventDefault();
+
+        var input = $( "#command" ).val();
+        $( "#command" ).val('');
+        if (form_pos == -1) {
+            sendCommand(input);
+        } else if (form_pos != -1) {
+            form[form_pos][1] = input;
+            form_pos++;
+            if (form_pos == form.length){
+                $("#label").html(">>");
+                submit_data = {}
+                $.each(form, function(index, value){
+                    submit_data[value[0]] = value[1];
+                });
+                $.post(url, submit_data, function(data) {
+                    $("#dialogue").append("<div class='reply'>"+data.reply+"</div><br/>");
+                    $(".reply:last-of-type").show('slow');
+                });
+                form_pos = -1;
+                form = [];
+            } else {
+                $("#label").html(form[form_pos][0]+":");
+                if (form[form_pos-1][0] == "password" || form[form_pos-1][0] == "content"){
+                    $("#command").remove();
+                    $("#command_box").append("<input id='command' type='text' name='command'>")
+                    setListener();    
+                }
+                if (form[form_pos][0] == "password"){
+                    $("#command").remove();
+                    $("#command_box").append("<input id='command' type='password' name='command'>")
+                    setListener();    
+                 }
+                if (form[form_pos][0] == "content"){
+                    $("#command").remove();
+                    $("#command_box").append("<textarea id='command' cols='80' rows='20'>")
+                    setListener();
+                }
+                $("command").val(form[form_pos][1]);
+            }
+        }
+        $("#command").focus();
+    }
+});
+}
+$(document).ready(function() {
+    setListener();
+    command = "tell Intro";
+    url = "archives/process/" + encodeURIComponent(command) + "/";
+    $.getJSON(url, function( data ) {
+        $( "#dialogue" ).append("<div class='reply'>"+data.reply+"</div><br/>")
+        $(".reply:last-of-type").show('slow');
+        $(".reply:last-of-type").children().each(function(){
+            $(this).click(function() {
+                var topic = $(this).attr("class").split(" ");
+                topic.shift();
+                topic = topic.join(" ");
+                if (topic == 'help') {
+                    sendCommand(topic);
+                } else {    
+                    sendCommand("tell me about "+topic);
+                }
+            });
+        });
+    });
+});
+
+</script>
+{% endblock %}
+
+{% block content %}
+<div id='dialogue' style="overflow:auto;">
+    
+</div>
+<br/>
+<div id='command_box'>
+    <div id='label'>>></div><input id='command' type='text' name='command'>
+</div>
+{% csrf_token %}
+{% endblock %}
+
