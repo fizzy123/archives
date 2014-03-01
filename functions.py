@@ -116,6 +116,6 @@ def process_command(text):
     text = text.replace('\'s ',':')
     command = text.split(' ')[0]
     text_arguments = text.split(' ')[1:]
-    removable_words = ['me', 'about']
+    removable_words = ['me', 'about', 'a', 'an', 'the']
     text_arguments = filter(lambda x: x not in removable_words, text_arguments)
     return command, text_arguments
