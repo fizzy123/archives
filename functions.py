@@ -114,8 +114,19 @@ def process_command(text):
     text = urllib2.unquote(text.decode("utf8"))
     text = text.replace('your ','Nobel:')
     text = text.replace('\'s ',':')
-    command = text.split(' ')[0]
-    text_arguments = text.split(' ')[1:]
-    removable_words = ['me', 'about', 'a', 'an', 'the']
+    text = text.replace('?','')
+    text = text.replace('.','')
+    text = text.lower()
+    text = text.split(' ')
+    if text[0:2] == ['what', 'is'] or text[0:2] == ['what','are']:
+        command = 'tell'
+        text_arguments = text[2:]
+    elif text[0] in ['tell','edit','login','logout','delete','edit_tags']:  
+        command = text[0]
+        text_arguments = text[1:]
+    else:
+        command = 'tell'
+        text_arguments = text
+    removable_words = ['me', 'about', 'a', 'an', 'the', 'us']
     text_arguments = filter(lambda x: x not in removable_words, text_arguments)
     return command, text_arguments
