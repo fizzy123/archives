@@ -7,22 +7,7 @@ var form = [];
 var form_pos = -1;
 var url
 
-function getCookie(name) {
-    var cookieValue = null;
-        if (document.cookie && document.cookie != '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = jQuery.trim(cookies[i]);
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-    return cookieValue;
-}
-var csrftoken = getCookie('csrftoken');
+var csrftoken = $.cookie('csrftoken');
 
 function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection
@@ -58,14 +43,17 @@ function sendCommand(command){
     url = "archives/process/" + encodeURIComponent(command) + "/";
     $( "#dialogue" ).append("<div class='command'>"+command+"</div><br/>");
     $(".command:last-of-type").show('slow');
+    console.log($.cookie("location"));
     $.getJSON(url, function( data ) {
-        $( "#dialogue" ).append("<div class='reply'>"+data.reply+"</div><br/>")
+        $( "#dialogue" ).append("<div class='reply' location='"+$.cookie('location')+"'>"+data.reply+"</div><br/>")
         $(".reply:last-of-type").show('slow', function() {
             $("html, body").animate({ scrollTop: $(document).height() }, 1000);
+            $("#command").focus();
         });
         $(".reply:last-of-type").children().each(function(){
             $(this).click(function() {
                 var topic = $(this).attr("class").split(" ");
+                $.cookie("location",$(this).parent().attr("location"));
                 topic.shift();
                 topic = topic.join(" ");
                 sendCommand("tell me about "+topic);
@@ -148,6 +136,10 @@ $(document).ready(function() {
     setListener();
     command = "tell Intro";
     url = "archives/process/" + encodeURIComponent(command) + "/";
+    $("#command").focus();
+    $(document).click(function(){
+        $("#command").focus();
+    });
     $.getJSON(url, function( data ) {
         $( "#dialogue" ).append("<div class='reply'>"+data.reply+"</div><br/>")
         $(".reply:last-of-type").show('slow');

@@ -1,4 +1,6 @@
 import json, urllib2
+import logging
+log = logging.getLogger(__name__)
 
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
@@ -15,6 +17,8 @@ def process(request, text):
     command, text_arguments = process_command(text);
     method = request.META['REQUEST_METHOD']
     arguments = {}
+    if request.COOKIES.get('location'):
+        request.session['location'] = urllib2.unquote(request.COOKIES.get('location').decode("utf8"))
     
     found = True
     found_node = None
@@ -78,6 +82,7 @@ def process(request, text):
         request.session['location'] = arguments['name']
     if found_node:
         request.session['location'] = found_node.title
+    response.set_cookie('location',request.session['location'])
     return response    
 
 

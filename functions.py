@@ -1,4 +1,6 @@
 import urllib2
+import logging
+log = logging.getLogger(__name__)
 
 from django.core.context_processors import csrf
 from django.contrib.auth import authenticate, logout, login
@@ -24,11 +26,13 @@ def tell(arguments, method):
                 if Node.objects.filter(title=name).exists():
                     n = Node.objects.get(title=name)
                 else:    
+                    log.debug(name)
                     n = Node.objects.get(title='idk')
         while n.content[0:3] == '-->':
             if Node.objects.filter(title=n.content[3::]):
                 n = Node.objects.get(title=n.content[3::])
             else:
+                log.debug(name)
                 n = Node.objects.get(title='idk')
         context = {'reply': parse_content(n.content, 'display'), 'title':n.title}
         return json_response(context), n
@@ -121,12 +125,12 @@ def process_command(text):
     if text[0:2] == ['what', 'is'] or text[0:2] == ['what','are']:
         command = 'tell'
         text_arguments = text[2:]
-    elif text[0] in ['tell','edit','login','logout','delete','edit_tags']:  
+    elif text[0] in ['tell','edit','login','logout','delete','edit_tags', 'help']:  
         command = text[0]
         text_arguments = text[1:]
     else:
         command = 'tell'
         text_arguments = text
-    removable_words = ['me', 'about', 'a', 'an', 'the', 'us']
+    removable_words = ['me', 'about', 'a', 'an', 'the', 'us', 'what']
     text_arguments = filter(lambda x: x not in removable_words, text_arguments)
     return command, text_arguments
