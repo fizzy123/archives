@@ -1,5 +1,6 @@
 import urllib2
 import logging
+from random import choice
 log = logging.getLogger(__name__)
 
 from django.core.context_processors import csrf
@@ -25,13 +26,19 @@ def tell(arguments, method):
             else:    
                 if Node.objects.filter(title=name).exists():
                     n = Node.objects.get(title=name)
-                else:    
+                else:
                     log.debug(name)
                     n = Node.objects.get(title='idk')
         while n.content[0:3] == '-->':
-            if Node.objects.filter(title=n.content[3::]):
-                n = Node.objects.get(title=n.content[3::])
-            else:
+            if n.content[3:5] == '*.':
+                if Tag.objects.filter(title=n.content[5:]).exists():
+                    tag = Tag.objects.get(title=n.content[5:])
+                    if tag.node_set.all().exists():
+                        n = choice(tag.node_set.all())
+            else:            
+                if Node.objects.filter(title=n.content[3:]).exists:
+                    n = Node.objects.get(title=n.content[3:])
+            if not n:
                 log.debug(name)
                 n = Node.objects.get(title='idk')
         context = {'reply': parse_content(n.content, 'display'), 'title':n.title}
@@ -65,13 +72,11 @@ def edit(arguments, method):
         if method == 'GET':
             context = {}
             context['reply'] = 'Please make your changes.'
-            context['form'] = {'content':n.content, 'name':n.title}
+            context['form'] = {'content':parse_content(n.content, 'edit'), 'name':n.title}
 
         elif method == 'POST':
-            name = arguments['new_name']
-            parsed_content = parse_content(arguments['content'], 'display')
-            n.content = parsed_content
-            n.title = name
+            n.content = parse_content(arguments['content'],'edit')
+            n.title = arguments['new_name']
             n.save()
             
             context = {}
@@ -122,15 +127,23 @@ def process_command(text):
     text = text.replace('.','')
     text = text.lower()
     text = text.split(' ')
-    if text[0:2] == ['what', 'is'] or text[0:2] == ['what','are']:
+    removable_words = ['me', 'about', 'the', 'us']
+    if text[0:2] in [['what', 'is'], ['what','are'], ['what','was']]:
         command = 'tell'
         text_arguments = text[2:]
+        removable_words = removable_words + ['a', 'an']
+    elif text[0] == "what's":
+        command = 'tell'
+        text_arguments = text[1:]
+        removable_words = removable_words + ['a', 'an']
     elif text[0] in ['tell','edit','login','logout','delete','edit_tags', 'help']:  
         command = text[0]
+        text_arguments = text[1:]
+    elif text[0] == 'show':
+        command = 'tell'
         text_arguments = text[1:]
     else:
         command = 'tell'
         text_arguments = text
-    removable_words = ['me', 'about', 'a', 'an', 'the', 'us', 'what']
     text_arguments = filter(lambda x: x not in removable_words, text_arguments)
     return command, text_arguments

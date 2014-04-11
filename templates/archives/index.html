@@ -86,7 +86,7 @@ function sendCommand(command){
 
 function setListener(){
 $( "#command" ).keypress(function( event ) {
-    if ( event.which == 13 ) {
+    if ( event.which == 13 && !event.shiftKey) {
         event.preventDefault();
 
         var input = $( "#command" ).val();
@@ -119,13 +119,13 @@ $( "#command" ).keypress(function( event ) {
                     $("#command").remove();
                     $("#command_box").append("<input id='command' type='password' name='command'>")
                     setListener();    
-                 }
+                }
                 if (form[form_pos][0] == "content"){
                     $("#command").remove();
                     $("#command_box").append("<textarea id='command' cols='80' rows='20'>")
                     setListener();
                 }
-                $("command").val(form[form_pos][1]);
+                $("#command").val(form[form_pos][1]);
             }
         }
         $("#command").focus();
