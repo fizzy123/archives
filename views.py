@@ -3,11 +3,11 @@ import logging
 log = logging.getLogger(__name__)
 
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.core.urlresolvers import reverse
 
 from archives.models import Node, Tag
-from archives.functions import tell, login_wrapper, logout_wrapper, edit, delete, edit_tags, process_command
+from archives.functions import tell, parse, login_wrapper, logout_wrapper, edit, delete, edit_tags, process_command
 from general.functions import parse_content, json_response
 
 def index(request):
@@ -41,7 +41,7 @@ def process(request, text):
         response = logout_wrapper(arguments, method)
     
     elif command in ['edit', 'create']:
-        arguments['is_authenticated'] = request.user.is_authenticated
+        arguments['is_authenticated'] = request.user.is_authenticated()
         if method == 'GET':
             if text_arguments[0]:
                 arguments['name'] = ' '.join(text_arguments)
@@ -53,7 +53,7 @@ def process(request, text):
         response = edit(arguments, method)
 
     elif command == 'delete':
-        arguments['is_authenticated'] = request.user.is_authenticated
+        arguments['is_authenticated'] = request.user.is_authenticated()
         if text_arguments[0]:
             arguments['name'] = ' '.join(text_arguments)
         else:
@@ -62,7 +62,7 @@ def process(request, text):
         arguments.pop('name', None) 
     
     elif command == 'edit_tags':
-        arguments['is_authenticated'] = request.user.is_authenticated
+        arguments['is_authenticated'] = request.user.is_authenticated()
         if text_arguments[0]:
             arguments['name'] = ' '.join(text_arguments)
         else:
@@ -74,6 +74,12 @@ def process(request, text):
         arguments['name']='this website:help'
         response, found_node = tell(arguments, 'GET')
         found = True if found_node.title != "idk" else False
+    elif command == 'process':
+        if request.session.has_key('location'):
+            arguments['location']=request.session['location']
+        arguments['name']=' '.join(text_arguments)
+        response, found_node = parse(arguments, method)
+        found = True if found_node.title != "idk" else False
     else:
         arguments['name']='idu'
         response = tell(arguments, 'GET')
@@ -82,7 +88,8 @@ def process(request, text):
         request.session['location'] = arguments['name']
     if found_node:
         request.session['location'] = found_node.title
-    response.set_cookie('location',request.session['location'])
+    if request.session.has_key('location'):
+        response.set_cookie('location',request.session['location'])
     return response    
 
 

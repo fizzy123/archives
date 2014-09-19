@@ -11,6 +11,7 @@ class Tag(models.Model):
 class Node(models.Model):
     title = models.CharField(max_length=200, default='idk', unique=True)
     content = models.TextField(default='Teach me')
+    question = models.TextField(default='')
     tags = models.ManyToManyField(Tag, blank = True)
     
     def __unicode__(self):

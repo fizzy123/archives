@@ -105,6 +105,9 @@ $( "#command" ).keypress(function( event ) {
                 $.post(url, submit_data, function(data) {
                     $("#dialogue").append("<div class='reply'>"+data.reply+"</div><br/>");
                     $(".reply:last-of-type").show('slow');
+                    $("#command").remove();
+                    $("#command_box").append("<input id='command' type='text' name='command'>")
+                    setListener();
                 });
                 form_pos = -1;
                 form = [];
