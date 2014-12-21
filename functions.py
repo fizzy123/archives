@@ -29,7 +29,7 @@ def tell(arguments, method):
                 if Node.objects.filter(title=name).exists():
                     n = Node.objects.get(title=name)
                 else:    
-                    log.debug(name)
+                    log.debug('%s not found' % name)
                     n = Node.objects.get(title='idk')
         while n.content[0:3] == '-->':
             if n.content[3:5] == '*.':
@@ -41,7 +41,7 @@ def tell(arguments, method):
                 if Node.objects.filter(title=n.content[3::]).exists():
                     n = Node.objects.get(title=n.content[3::])
                 else:
-                    log.debug(name)
+                    log.debug('%s not found' % name)
                     n = Node.objects.get(title='idk')
         context = {'reply': parse_content(n.content, 'display'), 'title':n.title}
         return json_response(context), n
@@ -62,7 +62,7 @@ def parse(arguments, method):
                 if len(matches):
                     n = Node.objects.get(pk=matches[0][0])
                 else:
-                    log.debug(name)
+                    log.debug('%s not found' % name)
                     n = Node.objects.get(title='idk')
         while n.content[0:3] == '-->':
             if n.content[3:5] == '*.':
@@ -74,7 +74,7 @@ def parse(arguments, method):
                 if Node.objects.filter(title=n.content[3:]).exists():
                     n = Node.objects.get(title=n.content[3:])
             if not n:
-                log.debug(name)
+                log.debug('%s not found' % name)
                 n = Node.objects.get(title='idk')
         context = {'reply': parse_content(n.content, 'display'), 'title':n.title}
         return json_response(context), n

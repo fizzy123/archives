@@ -2,103 +2,39 @@ import json, urllib2
 import logging
 log = logging.getLogger(__name__)
 
+#from clockwork import clockwork
+#api = clockwork.API('API_KEY_GOES_HERE')
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.urlresolvers import reverse
+from django_socketio import broadcast_channel
 
-from archives.models import Node, Tag
-from archives.functions import tell, parse, login_wrapper, logout_wrapper, edit, delete, edit_tags, process_command
-from general.functions import parse_content, json_response
+from archives.models import Response
+from general.functions import json_response
 
 def index(request):
     return render(request, 'archives/index.html')
 
-def process(request, text):
-    command, text_arguments = process_command(text);
-    method = request.META['REQUEST_METHOD']
-    arguments = {}
-    if request.COOKIES.get('location'):
-        request.session['location'] = urllib2.unquote(request.COOKIES.get('location').decode("utf8"))
-    
-    found = True
-    found_node = None
-    if command == 'tell':
-        if request.session.has_key('location'):
-            arguments['location']=request.session['location']
-        arguments['name']=' '.join(text_arguments)
-        response, found_node = tell(arguments, method)
-        found = True if found_node.title != "idk" else False
-    
-    elif command == 'login':
-        if method == 'POST':
-            arguments['username'] = request.POST['username']
-            arguments['password'] = request.POST['password']
-            arguments['request'] = request
-        response = login_wrapper(arguments, method)
-    
-    elif command == 'logout':
-        arguments['request'] = request
-        response = logout_wrapper(arguments, method)
-    
-    elif command in ['edit', 'create']:
-        arguments['is_authenticated'] = request.user.is_authenticated()
-        if method == 'GET':
-            if text_arguments[0]:
-                arguments['name'] = ' '.join(text_arguments)
-        elif method == 'POST':
-            arguments['new_name'] = request.POST['name']
-            arguments['content'] = request.POST['content']
-        if not arguments.has_key('name'):
-            arguments['name'] = request.session['location']
-        response = edit(arguments, method)
-
-    elif command == 'delete':
-        arguments['is_authenticated'] = request.user.is_authenticated()
-        if text_arguments[0]:
-            arguments['name'] = ' '.join(text_arguments)
-        else:
-            arguments['name'] = request.session['location']
-        response = delete(arguments, method)
-        arguments.pop('name', None) 
-    
-    elif command == 'edit_tags':
-        arguments['is_authenticated'] = request.user.is_authenticated()
-        if text_arguments[0]:
-            arguments['name'] = ' '.join(text_arguments)
-        else:
-            arguments['name'] = request.session['location']
-        if method == 'POST':
-            arguments['tags'] = request.POST['tags'].split(', ')
-        response = edit_tags(arguments, method)
-    elif command == 'help':
-        arguments['name']='this website:help'
-        response, found_node = tell(arguments, 'GET')
-        found = True if found_node.title != "idk" else False
-    elif command == 'process':
-        if request.session.has_key('location'):
-            arguments['location']=request.session['location']
-        arguments['name']=' '.join(text_arguments)
-        response, found_node = parse(arguments, method)
-        found = True if found_node.title != "idk" else False
+def recieve(request):
+    message = request.POST['message']
+    response, created = Response.objects.get_or_create(message = message)
+    if created:
+        response.save()
+        message = clockwork.SMS(
+            to = '6786974205', 
+            message = message)
+        api.send(message)
+        response = json_response({'channel':response.pk})
     else:
-        arguments['name']='idu'
-        response = tell(arguments, 'GET')
-        arguments['name']=''
-    if arguments.has_key('name'):
-        request.session['location'] = arguments['name']
-    if found_node:
-        request.session['location'] = found_node.title
-    if request.session.has_key('location'):
-        response.set_cookie('location',request.session['location'])
+        response = json_response({'reply': reponse.reply})
+
     return response    
 
-
-def show(request, name='idk'):
-     if request.META['REQUEST_METHOD'] == 'GET':
-        n = Node.objects.get(title=name)
-        if not n:
-            n = Node.objects.get(title='idk')
-        context = {'node': n.build_dict()}    
-
-        request.session['location'] = name
-        return render(request, 'archives/generic.html', context)
+def reply(request):
+    reply = request.GET['content']
+    response = Response.objects.filter(reply=None).order_by('created')[0]
+    response.reply = reply
+    response.save()
+    broadcast(response.reply, channel=response.pk)
+    return HttpResponse()

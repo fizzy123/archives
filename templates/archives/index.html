@@ -39,48 +39,31 @@ $.ajaxSetup({
     }
 });
 
+function showReply(reply) {
+    $( "#dialogue" ).append("<div class='reply' >"+data.reply+"</div><br/>")
+    $(".reply:last-of-type").show('slow', function() {
+        $("html, body").animate({ scrollTop: $(document).height() }, 1000);
+        $("#command").focus();
+    });
+}
+
 function sendCommand(command){
-    url = "archives/process/" + encodeURIComponent(command) + "/";
+    url = "/archives/recieve/";
     $( "#dialogue" ).append("<div class='command'>"+command+"</div><br/>");
     $(".command:last-of-type").show('slow');
-    console.log($.cookie("location"));
-    $.getJSON(url, function( data ) {
-        $( "#dialogue" ).append("<div class='reply' location='"+$.cookie('location')+"'>"+data.reply+"</div><br/>")
-        $(".reply:last-of-type").show('slow', function() {
-            $("html, body").animate({ scrollTop: $(document).height() }, 1000);
-            $("#command").focus();
-        });
-        $(".reply:last-of-type").children().each(function(){
-            $(this).click(function() {
-                var topic = $(this).attr("class").split(" ");
-                $.cookie("location",$(this).parent().attr("location"));
-                topic.shift();
-                topic = topic.join(" ");
-                sendCommand("tell me about "+topic);
+    $.post(url, {message:command}, function( data ) {
+        if (data.reply) {
+            showReply(data.reply)
+        } else {
+            var socket = new io.Socket();
+            socket.connect();
+            socket.on('connect', function() {
+                socket.subscribe(data.channel);
             });
-        });
-            
-        if (data.form != null){
-            $.each(data.form, function(key,value){
-                form.push([key,value]);
-            });
-            $("#label").html(form[0][0]+":");
-            if (form[0][0] == "content"){
-                $("#command").remove();
-                $("#command_box").append("<textarea id='command' cols='80' rows='20'>")
-                $("#command").focus();
-                setListener();
-            }
-            if (form[0][0] == "password"){
-                $("#command").remove();
-                $("#command_box").append("<input id='command' type='password' name='command'>")
-                $("#command").focus();
-                setListener();
-            }
-            $("#command").val(form[0][1]);
-            form_pos = 0;    
+            socket.on(data.channel, function (msg) {
+                showReply(msg)
+            })
         }
-
     });
 }
 
@@ -91,73 +74,22 @@ $( "#command" ).keypress(function( event ) {
 
         var input = $( "#command" ).val();
         $( "#command" ).val('');
-        if (form_pos == -1) {
-            sendCommand(input);
-        } else if (form_pos != -1) {
-            form[form_pos][1] = input;
-            form_pos++;
-            if (form_pos == form.length){
-                $("#label").html(">>");
-                submit_data = {}
-                $.each(form, function(index, value){
-                    submit_data[value[0]] = value[1];
-                });
-                $.post(url, submit_data, function(data) {
-                    $("#dialogue").append("<div class='reply'>"+data.reply+"</div><br/>");
-                    $(".reply:last-of-type").show('slow');
-                    $("#command").remove();
-                    $("#command_box").append("<input id='command' type='text' name='command'>")
-                    setListener();
-                });
-                form_pos = -1;
-                form = [];
-            } else {
-                $("#label").html(form[form_pos][0]+":");
-                if (form[form_pos-1][0] == "password" || form[form_pos-1][0] == "content"){
-                    $("#command").remove();
-                    $("#command_box").append("<input id='command' type='text' name='command'>")
-                    setListener();    
-                }
-                if (form[form_pos][0] == "password"){
-                    $("#command").remove();
-                    $("#command_box").append("<input id='command' type='password' name='command'>")
-                    setListener();    
-                }
-                if (form[form_pos][0] == "content"){
-                    $("#command").remove();
-                    $("#command_box").append("<textarea id='command' cols='80' rows='20'>")
-                    setListener();
-                }
-                $("#command").val(form[form_pos][1]);
-            }
-        }
+        sendCommand(input);
         $("#command").focus();
     }
 });
 }
 $(document).ready(function() {
     setListener();
-    command = "tell Intro";
-    url = "archives/process/" + encodeURIComponent(command) + "/";
+    command = "Intro";
+    url = "/archives/recieve/";
     $("#command").focus();
     $(document).click(function(){
         $("#command").focus();
     });
-    $.getJSON(url, function( data ) {
+    $.post(url, {message:command} function( data ) {
         $( "#dialogue" ).append("<div class='reply'>"+data.reply+"</div><br/>")
         $(".reply:last-of-type").show('slow');
-        $(".reply:last-of-type").children().each(function(){
-            $(this).click(function() {
-                var topic = $(this).attr("class").split(" ");
-                topic.shift();
-                topic = topic.join(" ");
-                if (topic == 'help') {
-                    sendCommand(topic);
-                } else {    
-                    sendCommand("tell me about "+topic);
-                }
-            });
-        });
     });
 });
 

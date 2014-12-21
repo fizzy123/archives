@@ -44,3 +44,8 @@ class Node(models.Model):
             if not len(tag.node_set.all()):
                 tag.delete()
         return self        
+
+class Response(models.Model):
+    message = models.CharField(max_length=500)
+    response = models.CharField(max_length=500, blank = True, null = True)
+    created = models.DateTimeField(auto_now_add=True)
